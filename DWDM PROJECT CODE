@@ -1,0 +1,64 @@
+!pip install requests beautifulsoup4 lxml networkx matplotlib
+
+import requests
+from bs4 import BeautifulSoup
+import networkx as nx
+import matplotlib.pyplot as plt
+
+
+url = 'https://en.wikipedia.org/wiki/Main_Page' 
+
+response = requests.get(url)
+if response.status_code == 200:
+    soup = BeautifulSoup(response.content, 'lxml')
+else:
+    print("Failed to fetch page. Status code:", response.status_code)
+
+# Step 3: Extract Layout Elements Safely
+header = soup.find('header') or soup.find('div', {'id': 'mw-head'})
+nav = soup.find('nav') or soup.find('div', {'id': 'mw-panel'})
+main_content = soup.find('main') or soup.find('div', {'id': 'content'})
+sidebar = soup.find('aside') or soup.find('div', {'id': 'mw-navigation'})
+footer = soup.find('footer') or soup.find('div', {'id': 'footer'})
+
+# Step 4: Display Extracted Layout Elements (Text Preview)
+print('Header:', header.text.strip()[:300] if header else 'Not Found')
+print('Navigation:', nav.text.strip()[:300] if nav else 'Not Found')
+print('Main Content:', main_content.text.strip()[:300] if main_content else 'Not Found')
+print('Sidebar:', sidebar.text.strip()[:300] if sidebar else 'Not Found')
+print('Footer:', footer.text.strip()[:300] if footer else 'Not Found')
+
+# Step 5: Visualize Layout Structure (Simple Tree Diagram)
+G = nx.DiGraph()
+G.add_node("HTML")
+if header: G.add_node("Header")
+if nav: G.add_node("Navigation")
+if main_content: G.add_node("Main Content")
+if sidebar: G.add_node("Sidebar")
+if footer: G.add_node("Footer")
+
+# Connect nodes to HTML root
+if header: G.add_edge("HTML", "Header")
+if nav: G.add_edge("HTML", "Navigation")
+if main_content: G.add_edge("HTML", "Main Content")
+if sidebar: G.add_edge("HTML", "Sidebar")
+if footer: G.add_edge("HTML", "Footer")
+
+# Draw the tree
+plt.figure(figsize=(8, 6))
+pos = nx.spring_layout(G)
+nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, font_size=10)
+plt.title("Web Page Layout Structure Visualization")
+plt.show()
+
+# Step 6: Basic SEO Check - H1 Tags in Main Content
+if main_content:
+    h1_tags = main_content.find_all('h1')
+    print('Number of <h1> tags in Main Content:', len(h1_tags))
+    if len(h1_tags) == 0:
+        print("SEO Suggestion: Add an <h1> tag in Main Content for better SEO.")
+    else:
+        for i, h1 in enumerate(h1_tags, start=1):
+            print(f"H1 Tag {i}: {h1.text.strip()}")
+else:
+    print("Main Content section not found.")
